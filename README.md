@@ -1,6 +1,6 @@
-# My AI Playground
+# My Agentic AI Playground
 
-This project is a **Streamlit-based AI playground** that allows users to interact with AI models via two modes:
+This project is a **Streamlit-based Agentic AI playground** that allows users to interact with AI models via two modes:
 
 1. **Chat**
 2. **Data Agent**
