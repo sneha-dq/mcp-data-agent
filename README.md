@@ -1,10 +1,10 @@
-# MCP Data Agent - My Agentic AI Playground
+# MCP Data Agent
 
 MCP Data Agent is a modular, extensible project built on **Streamlit**, **LLMs (via Ollama)**, and **database connectors** to enable natural language interaction with data.  
 It allows users to **query databases in plain English** and get back **streamed SQL queries and results in real time**.  
 
-The project follows a **clean architecture** pattern, where each layer (UI, services, utils) is decoupled and easily extensible.  
-It conforms to the **MCP Agent** design, making it adaptable for multiple backends and agents.
+The project follows the **Model Context Protocol (MCP)** principles, where services like **models, tools, and data connections** are exposed as pluggable modules.  
+This makes the agent **discoverable, extensible, and interoperable** with any MCP-compliant client.
 
 ---
 
@@ -67,27 +67,31 @@ mcp-data-agent/
 
 ---
 
-## 🧩 How It Conforms to MCP Agent
+## 🧩 How It Conforms to Model Context Protocol (MCP)
 
-The **MCP (Modular Conversational Processing) Agent** is about breaking down the conversational agent into **separable, pluggable components**:
+The **Model Context Protocol (MCP)** defines how models and tools expose themselves as services that can be discovered and invoked by a client.  
+This project conforms to MCP by treating **models, tools, and DB access** as modular providers:
 
-1. **UI Layer (Streamlit - `ui/layout.py`)**  
-   - Handles user interaction (inputs, dropdowns, results).  
-   - Conforms to MCP principle of **separation of concerns**.
+1. **Model Provider (`ollama_service.py`)**  
+   - Exposes Ollama LLMs as MCP-compatible models.  
+   - The client can **list available models** (via `/api/tags`) and dynamically select one.  
+   - Aligns with MCP’s `models/list` capability.
 
-2. **Service Layer (`services/`)**  
-   - `agent.py` → The **core MCP Agent**: takes input, invokes LLM, manages DB interaction, and streams SQL/output back.  
-   - `ollama_service.py` → **LLM service** with streaming support.  
-   - `db_service.py` → **Data service** for DB queries.  
-   - Each service is swappable → aligns with MCP’s **pluggable services** design.
+2. **Tool Provider (`agent.py`)**  
+   - Defines a **data agent tool** that accepts natural language and returns SQL queries/results.  
+   - This is an MCP **tool**, callable by the client to perform structured operations (SQL generation + execution).  
+   - Implements the MCP principle of tools being declarative, composable, and discoverable.
 
-3. **Utils Layer (`utils/helpers.py`)**  
-   - Common utilities (formatting, configs, etc.) reused across services.  
-   - Matches MCP principle of **shared helper utilities**.
+3. **Database Connector (`db_service.py`)**  
+   - Acts as a **resource provider** (in MCP terms), allowing access to Postgres (and potentially other DBs).  
+   - Queries are executed safely and returned in a structured format (DataFrame → JSON).  
+   - Conforms to MCP’s separation of context (resources are independent from models/tools).
 
-4. **Config (`config.py`)**  
-   - Centralized configurations (DB URI, LLM model names, etc.).  
-   - Makes the agent **environment-agnostic and reusable**.
+4. **Client/UI (`ui/layout.py`, `app.py`)**  
+   - The Streamlit frontend is a thin client that **calls MCP services** (models, tools, DB).  
+   - UI is separate from service logic, which matches MCP’s client/server boundaries.
+
+By structuring the app this way, the project could **evolve into a full MCP server**, where `agent.py` and `ollama_service.py` expose endpoints for any MCP client (not just Streamlit).  
 
 ---
 
@@ -97,14 +101,16 @@ The **MCP (Modular Conversational Processing) Agent** is about breaking down the
   Implement a new handler in `db_service.py`.  
   Example: add `SnowflakeService` or `BigQueryService`.
 
-- **Add New LLMs**  
-  Extend `ollama_service.py` to support OpenAI, Anthropic, or local Hugging Face models.
+- **Add New Models**  
+  Extend `ollama_service.py` to support OpenAI, Anthropic, or Hugging Face models.  
+  These will appear as new MCP model providers.
+
+- **Add New Tools**  
+  Define more tools in `agent.py` (e.g., Data Validation, Data Summarization).  
+  MCP clients can then **discover and call** them.
 
 - **Custom UI**  
-  Add new input widgets in `ui/layout.py` (filters, checkboxes, table preview, etc.).
-
-- **Plug into Pipelines**  
-  The MCP Agent can be used as a module in Airflow, dbt, or custom ETL scripts for dynamic SQL generation.
+  Add new widgets in `ui/layout.py` for filtering, visualizations, or exporting results.
 
 ---
 
@@ -152,6 +158,7 @@ streamlit run app.py
 
 ## 📌 Roadmap
 
+- [ ] Expose MCP endpoints for models/tools/resources.  
 - [ ] Add authentication & user roles.  
 - [ ] Support multiple DB backends simultaneously.  
 - [ ] Add natural language **data validation checks** (integration with Great Expectations).  
