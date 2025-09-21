@@ -1,155 +1,166 @@
-# My Agentic AI Playground
+# MCP Data Agent - My Agentic AI Playground
 
-This project is a **Streamlit-based Agentic AI playground** that allows users to interact with AI models via two modes:
+MCP Data Agent is a modular, extensible project built on **Streamlit**, **LLMs (via Ollama)**, and **database connectors** to enable natural language interaction with data.  
+It allows users to **query databases in plain English** and get back **streamed SQL queries and results in real time**.  
 
-1. **Chat**
-2. **Data Agent**
-
-It demonstrates the integration of **Ollama models** for natural language understanding and shows a simplified **MCP-style agent** interacting with a local PostgreSQL database.
-
----
-
-## Features
-
-* Streamlit-based interactive UI
-* Sidebar for selecting the **Ollama model** and **mode**
-* Streaming responses from the model in Chat mode
-* Data Agent mode for generating SQL from natural language and executing it on PostgreSQL
-* Returns results in a formatted **pandas DataFrame**
+The project follows a **clean architecture** pattern, where each layer (UI, services, utils) is decoupled and easily extensible.  
+It conforms to the **MCP Agent** design, making it adaptable for multiple backends and agents.
 
 ---
 
-## Installation
+## 📂 Project Structure
 
-```bash
-pip install streamlit requests pandas sqlalchemy psycopg2-binary
+```
+mcp-data-agent/
+├── app.py                  # Streamlit entry point
+├── archive/main.py         # Old monolithic version (kept for reference)
+├── config.py               # Centralized configuration
+├── services/               # Core services layer
+│   ├── agent.py            # Agent orchestration (SQL + LLM + DB)
+│   ├── db_service.py       # Database connectivity and query execution
+│   ├── ollama_service.py   # Ollama LLM service (streaming enabled)
+├── ui/                     # UI layout components
+│   └── layout.py           # Streamlit UI layout, input/output boxes
+├── utils/                  # Helper functions and utilities
+│   └── helpers.py
+├── snapshots/              # Demo images for README
+│   ├── DataAgent.png
+│   ├── modelSelection.png
+│   ├── optionSelection.png
+│   └── streamingOutput.png
+└── venv/                   # Virtual environment
 ```
 
-Make sure you have **Ollama** running locally and a **PostgreSQL database** available.
+---
+
+## 🚀 Features
+
+- **Natural Language to SQL**  
+  Convert plain English queries into executable SQL using LLMs.
+
+- **Real-time SQL Streaming**  
+  Queries are displayed token-by-token as they are generated, mimicking a "typing effect".  
+  ![Streaming Output](snapshots/streamingOutput.png)
+
+- **Database Integration**  
+  - Modular `db_service.py` for managing DB connections.  
+  - Easily extendable for multiple databases (Postgres, MySQL, Snowflake, etc.).
+
+- **Model Selection**  
+  Switch between LLM models for query generation.  
+  ![Model Selection](snapshots/modelSelection.png)
+
+- **UI Controls**  
+  Clean Streamlit UI with input box, dropdowns, and results display.  
+  ![Option Selection](snapshots/optionSelection.png)
+
+- **Extensible & Modular**  
+  Each responsibility is separated into a service/module:
+  - `ollama_service.py` → Handles model calls  
+  - `agent.py` → Orchestrates logic (LLM + SQL + DB)  
+  - `db_service.py` → Database abstraction  
+  - `layout.py` → UI rendering  
+  - `helpers.py` → Utility functions  
+
+- **Archived Monolithic Code**  
+  `archive/main.py` contains the old single-file version for reference, showing how the project evolved to modular design.
 
 ---
 
-## How It Works
+## 🧩 How It Conforms to MCP Agent
 
-### 1. Chat Mode
+The **MCP (Modular Conversational Processing) Agent** is about breaking down the conversational agent into **separable, pluggable components**:
 
-* **Purpose**: Free-form conversation with the selected Ollama model.
-* **Implementation**:
+1. **UI Layer (Streamlit - `ui/layout.py`)**  
+   - Handles user interaction (inputs, dropdowns, results).  
+   - Conforms to MCP principle of **separation of concerns**.
 
-  * User input is sent directly to the Ollama model using the `stream_model_response` function.
-  * The response is **streamed token-by-token** to the UI using a placeholder in Streamlit.
-  * No external tools are used in this mode.
-  
-#### 📷  Snapshots
-Snapshots are placed in the Snapshots folder
-![Streaming Output](snapshots/streamingOutput.png)  
-*Streaming Response from Model*
+2. **Service Layer (`services/`)**  
+   - `agent.py` → The **core MCP Agent**: takes input, invokes LLM, manages DB interaction, and streams SQL/output back.  
+   - `ollama_service.py` → **LLM service** with streaming support.  
+   - `db_service.py` → **Data service** for DB queries.  
+   - Each service is swappable → aligns with MCP’s **pluggable services** design.
 
-![Model Selection](snapshots/modelSelection.png)  
-*Ability to change Model*
+3. **Utils Layer (`utils/helpers.py`)**  
+   - Common utilities (formatting, configs, etc.) reused across services.  
+   - Matches MCP principle of **shared helper utilities**.
 
-
-### 2. Data Agent Mode
-
-* **Purpose**: Acts as an **MCP-style agent** that can query a PostgreSQL database based on natural language input.
-* **Implementation Steps**:
-
-1. **User Input**: The user enters a natural language query.
-2. **Instruction / Context**: The input is wrapped in a system instruction that tells the model:
-
-   ```text
-   You are a Data Agent with access to a PostgreSQL database.
-   Translate the following user request into a valid SQL query for PostgreSQL.
-   Only return the SQL, no explanations.
-   ```
-3. **Agent (Ollama Model)**: Receives the combined user query and context. Generates SQL as the **agent's action**.
-4. **Cleaning SQL**: The raw SQL from the model is cleaned to remove markdown code fences and comments to avoid syntax errors.
-5. **Tool Invocation**: The cleaned SQL is executed on the PostgreSQL database via SQLAlchemy (`engine.execute`).
-6. **Observation / Response**: The results are returned as a **pandas DataFrame**.
-7. **Controller (Streamlit)**: The DataFrame is displayed in a formatted, scrollable table using `st.dataframe`.
-
-#### 📷  Snapshots
-![Data Agent](snapshots/DataAgent.png)  
-*Data Agent Response*
-
-### 3. MCP Terms Mapping
-
-| MCP Concept                 | Your Implementation                                  |
-| --------------------------- | ---------------------------------------------------- |
-| Agent                       | Ollama model selected from the sidebar               |
-| Tool                        | PostgreSQL database                                  |
-| Context                     | Instruction string wrapping the user query           |
-| Action / Tool Invocation    | Executing the SQL query on PostgreSQL                |
-| Response / Observation      | DataFrame returned with query results                |
-| Controller / Orchestrator   | Streamlit app handling input → agent → tool → output |
-| Agent Prompt / Instructions | "Only return SQL, no explanations"                   |
-| Model Context               | Ollama sees both the instruction and user query      |
-
-### Notes on MCP Compliance
-
-* This implementation follows the **spirit of MCP**: agent receives context + tools, generates action, executes, and returns observation.
-* Currently, communication is via **raw prompts**, not structured JSON or RPC.
-* For full MCP compliance:
-
-  * Use **JSON messages**: `{ "tool": "postgres", "action": "execute", "query": "..." }`
-  * Restrict agent actions explicitly to allowed tools.
-  * Handle errors or unsafe queries in a structured manner.
+4. **Config (`config.py`)**  
+   - Centralized configurations (DB URI, LLM model names, etc.).  
+   - Makes the agent **environment-agnostic and reusable**.
 
 ---
 
-## Streamlit Usage
+## 🛠️ Extensibility
 
-1. Run the app:
+- **Add New Databases**  
+  Implement a new handler in `db_service.py`.  
+  Example: add `SnowflakeService` or `BigQueryService`.
 
+- **Add New LLMs**  
+  Extend `ollama_service.py` to support OpenAI, Anthropic, or local Hugging Face models.
+
+- **Custom UI**  
+  Add new input widgets in `ui/layout.py` (filters, checkboxes, table preview, etc.).
+
+- **Plug into Pipelines**  
+  The MCP Agent can be used as a module in Airflow, dbt, or custom ETL scripts for dynamic SQL generation.
+
+---
+
+## 🖼️ Screenshots
+
+### Data Agent UI
+![Data Agent](snapshots/DataAgent.png)
+
+### Model Selection
+![Model Selection](snapshots/modelSelection.png)
+
+### Option Selection
+![Option Selection](snapshots/optionSelection.png)
+
+### Streaming SQL Output
+![Streaming Output](snapshots/streamingOutput.png)
+
+---
+
+## ▶️ Getting Started
+
+### 1. Clone Repo
+```bash
+git clone https://github.com/yourusername/mcp-data-agent.git
+cd mcp-data-agent
+```
+
+### 2. Create Virtual Env
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Run the App
 ```bash
 streamlit run app.py
 ```
 
-2. Use the sidebar to:
+---
 
-   * Select the Ollama model.
-   * Choose between **Chat** and **Data Agent** modes.
-3. Enter your query in the input box.
-4. Click **Submit**.
+## 📌 Roadmap
 
-* **Chat Mode**: Streams response token-by-token.
-* **Data Agent Mode**: Returns a formatted DataFrame after executing SQL.
+- [ ] Add authentication & user roles.  
+- [ ] Support multiple DB backends simultaneously.  
+- [ ] Add natural language **data validation checks** (integration with Great Expectations).  
+- [ ] Enable export of generated SQL queries.  
+- [ ] Enhance streaming UX (syntax highlighting, query diff).  
 
 ---
 
-## Example Queries
+## 📜 License
 
-**Chat Mode**:
-
-```
-Tell me a joke about data.
-```
-
-**Data Agent Mode**:
-
-```
-Show the first 5 rows of the customers table.
-```
-
----
-
-## Notes
-
-* Ensure PostgreSQL credentials and database exist and are accessible.
-* Ollama server must be running locally at `http://localhost:11434`.
-* SQL cleaning removes markdown fences and comments to prevent syntax errors.
-* The DataFrame display is scrollable and interactive in Streamlit.
-
----
-
-## Future Improvements
-
-* Full MCP-compliant messaging with JSON-RPC.
-* Multi-tool support (e.g., calling APIs, file system tools).
-* Streaming query results in Data Agent mode for real-time observation.
-* Input validation and safe SQL execution to prevent harmful queries.
-
----
-
-## 📄 License
-MIT License. Free to use and modify.  
+This project is licensed under the MIT License.  
+See [LICENSE](LICENSE) for details.

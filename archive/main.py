@@ -55,7 +55,7 @@ def query_data_agent(prompt, model):
     sql_query_raw = stream_model_response(model, instruction).strip()
     sql_query = clean_sql(sql_query_raw)
 
-    print(sql_query)
+    #print(sql_query)
 
     # Step 2: Run SQL on Postgres
     try:
